@@ -56,3 +56,18 @@ def login(request):
     return Response({
         'error': 'Username and password required'
     }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def logout(request):
+    try:
+        # Delete the user's token to invalidate the session
+        Token.objects.get(user=request.user).delete()
+        return Response({
+            'message': 'Logout successful'
+        }, status=status.HTTP_200_OK)
+    except Token.DoesNotExist:
+        return Response({
+            'message': 'Logout successful'
+        }, status=status.HTTP_200_OK)
