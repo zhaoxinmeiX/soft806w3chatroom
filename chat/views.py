@@ -164,6 +164,44 @@ def join_chatroom(request, chatroom_id):
     }, status=status.HTTP_200_OK)
 
 
+class MessagePagination(PageNumberPagination):
+    page_size = 50
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def message_history(request, chatroom_id):
+    # Check if chatroom exists
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is a member of the chatroom
+    if not ChatroomMember.objects.filter(user=request.user, chatroom=chatroom).exists():
+        return Response({
+            'error': 'You are not a member of this chatroom'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Filter messages by room_id, order by created_at descending, use select_related
+    messages = Message.objects.filter(
+        chatroom=chatroom
+    ).select_related('sender').order_by('-created_at')
+    
+    # Apply pagination
+    paginator = MessagePagination()
+    paginated_messages = paginator.paginate_queryset(messages, request)
+    
+    # Serialize the messages
+    serializer = MessageSerializer(paginated_messages, many=True)
+    
+    return paginator.get_paginated_response(serializer.data)
+
+
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def send_message(request, chatroom_id):
