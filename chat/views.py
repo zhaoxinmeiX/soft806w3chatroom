@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from django.contrib.auth import authenticate
 from .serializers import UserRegistrationSerializer
+from .models import Chatroom, ChatroomMember
 
 
 @api_view(['POST'])
@@ -56,6 +57,45 @@ def login(request):
     return Response({
         'error': 'Username and password required'
     }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_chatroom(request):
+    name = request.data.get('name')
+    description = request.data.get('description', '')
+    is_private = request.data.get('is_private', False)
+    
+    if not name:
+        return Response({
+            'error': 'Name is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        chatroom = Chatroom.objects.create(
+            name=name,
+            description=description,
+            is_private=is_private,
+            created_by=request.user
+        )
+        
+        ChatroomMember.objects.create(
+            user=request.user,
+            chatroom=chatroom,
+            role='admin'
+        )
+        
+        return Response({
+            'id': chatroom.id,
+            'name': chatroom.name,
+            'description': chatroom.description,
+            'created_by': chatroom.created_by.username
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(['POST'])
