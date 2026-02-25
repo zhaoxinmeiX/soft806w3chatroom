@@ -61,8 +61,9 @@ class ChatroomSerializer(serializers.ModelSerializer):
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_username = serializers.CharField(source='sender.username', read_only=True)
+    sender_display_name = serializers.CharField(source='sender.userprofile.display_name', read_only=True)
     
     class Meta:
         model = Message
-        fields = ['id', 'content', 'sender_username', 'created_at']
+        fields = ['id', 'content', 'sender_username', 'sender_display_name', 'created_at']
         read_only_fields = ['id', 'created_at']
