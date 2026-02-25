@@ -249,3 +249,46 @@ def profile(request):
         return Response({
             'error': 'Profile not found'
         }, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def update_profile(request):
+    try:
+        user_profile = request.user.userprofile
+        
+        # Get display_name from request body
+        display_name = request.data.get('display_name')
+        
+        if display_name is None:
+            return Response({
+                'error': 'display_name field is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Validate display_name length
+        if len(display_name.strip()) == 0:
+            return Response({
+                'error': 'display_name cannot be empty'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if len(display_name) > 100:
+            return Response({
+                'error': 'display_name cannot exceed 100 characters'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Update the display_name field
+        user_profile.display_name = display_name.strip()
+        user_profile.save()
+        
+        # Return updated user data
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except UserProfile.DoesNotExist:
+        return Response({
+            'error': 'Profile not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    except Exception as e:
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
