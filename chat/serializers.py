@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile, Chatroom
+from .models import UserProfile, Chatroom, Message
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -57,3 +57,12 @@ class ChatroomSerializer(serializers.ModelSerializer):
     @staticmethod
     def get_member_count(obj):
         return obj.get_member_count()
+
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
+    
+    class Meta:
+        model = Message
+        fields = ['id', 'content', 'sender_username', 'created_at']
+        read_only_fields = ['id', 'created_at']

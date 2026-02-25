@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import authenticate
-from .serializers import UserRegistrationSerializer, ChatroomSerializer
-from .models import Chatroom, ChatroomMember
+from .serializers import UserRegistrationSerializer, ChatroomSerializer, MessageSerializer
+from .models import Chatroom, ChatroomMember, Message
 
 
 @api_view(['POST'])
@@ -162,3 +162,39 @@ def join_chatroom(request, chatroom_id):
     return Response({
         'message': 'Successfully joined chatroom'
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def send_message(request, chatroom_id):
+    # Check if chatroom exists
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is a member of the chatroom
+    if not ChatroomMember.objects.filter(user=request.user, chatroom=chatroom).exists():
+        return Response({
+            'error': 'You are not a member of this chatroom'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Validate request body contains content field
+    content = request.data.get('content')
+    if not content:
+        return Response({
+            'error': 'Content field is required'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Create new message
+    message = Message.objects.create(
+        chatroom=chatroom,
+        sender=request.user,
+        content=content
+    )
+    
+    # Return response with message details
+    serializer = MessageSerializer(message)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
