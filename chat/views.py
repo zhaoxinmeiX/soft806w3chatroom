@@ -4,8 +4,8 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import authenticate
-from .serializers import UserRegistrationSerializer, ChatroomSerializer, MessageSerializer
-from .models import Chatroom, ChatroomMember, Message
+from .serializers import UserRegistrationSerializer, ChatroomSerializer, MessageSerializer, UserProfileSerializer
+from .models import Chatroom, ChatroomMember, Message, UserProfile
 
 
 @api_view(['POST'])
@@ -236,3 +236,16 @@ def send_message(request, chatroom_id):
     # Return response with message details
     serializer = MessageSerializer(message)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def profile(request):
+    try:
+        user_profile = request.user.userprofile
+        serializer = UserProfileSerializer(user_profile)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except UserProfile.DoesNotExist:
+        return Response({
+            'error': 'Profile not found'
+        }, status=status.HTTP_404_NOT_FOUND)
