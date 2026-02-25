@@ -131,3 +131,34 @@ def list_chatrooms(request):
     serializer = ChatroomSerializer(paginated_chatrooms, many=True)
     
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def join_chatroom(request, chatroom_id):
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if chatroom.is_private:
+        return Response({
+            'error': 'Cannot join private chatroom'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    if ChatroomMember.objects.filter(user=request.user, chatroom=chatroom).exists():
+        return Response({
+            'error': 'You are already a member'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    ChatroomMember.objects.create(
+        user=request.user,
+        chatroom=chatroom,
+        role='member'
+    )
+    
+    return Response({
+        'message': 'Successfully joined chatroom'
+    }, status=status.HTTP_200_OK)
