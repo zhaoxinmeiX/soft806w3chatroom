@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import UserProfile
+from .models import UserProfile, Chatroom
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -43,3 +43,17 @@ class UserProfileSerializer(serializers.ModelSerializer):
         model = UserProfile
         fields = ['username', 'email', 'display_name', 'bio', 'is_online', 'last_seen', 'created_at']
         read_only_fields = ['is_online', 'last_seen', 'created_at']
+
+
+class ChatroomSerializer(serializers.ModelSerializer):
+    member_count = serializers.SerializerMethodField()
+    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+    
+    class Meta:
+        model = Chatroom
+        fields = ['id', 'name', 'description', 'is_private', 'member_count', 'created_by_username', 'created_at']
+        read_only_fields = ['id', 'created_at']
+    
+    @staticmethod
+    def get_member_count(obj):
+        return obj.get_member_count()

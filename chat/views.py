@@ -2,8 +2,9 @@ from rest_framework import status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
+from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import authenticate
-from .serializers import UserRegistrationSerializer
+from .serializers import UserRegistrationSerializer, ChatroomSerializer
 from .models import Chatroom, ChatroomMember
 
 
@@ -111,3 +112,22 @@ def logout(request):
         return Response({
             'message': 'Logout successful'
         }, status=status.HTTP_200_OK)
+
+
+class ChatroomPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def list_chatrooms(request):
+    chatrooms = Chatroom.objects.filter(is_private=False).order_by('-created_at')
+    
+    paginator = ChatroomPagination()
+    paginated_chatrooms = paginator.paginate_queryset(chatrooms, request)
+    
+    serializer = ChatroomSerializer(paginated_chatrooms, many=True)
+    
+    return paginator.get_paginated_response(serializer.data)
