@@ -14,4 +14,5 @@ urlpatterns = [
     path('chatrooms/<int:chatroom_id>/leave/', views.leave_chatroom, name='leave_chatroom'),
     path('chatrooms/<int:chatroom_id>/messages/', views.message_history, name='message_history'),
     path('chatrooms/<int:chatroom_id>/send-message/', views.send_message, name='send_message'),
+    path('chatrooms/<int:chatroom_id>/search/', views.search_messages, name='search_messages'),
 ]

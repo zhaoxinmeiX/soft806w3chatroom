@@ -170,6 +170,12 @@ class MessagePagination(PageNumberPagination):
     max_page_size = 100
 
 
+class SearchPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def message_history(request, chatroom_id):
@@ -332,3 +338,43 @@ def update_profile(request):
         return Response({
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def search_messages(request, chatroom_id):
+    # Validate query parameter
+    query = request.query_params.get('q')
+    if not query or not query.strip():
+        return Response({
+            'error': 'Query parameter "q" is required and cannot be empty'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Check if chatroom exists
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is a member of the chatroom
+    if not ChatroomMember.objects.filter(user=request.user, chatroom=chatroom).exists():
+        return Response({
+            'error': 'You are not a member of this chatroom'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Filter messages by room_id, content contains keyword (icontains), order by created_at descending, use select_related
+    messages = Message.objects.filter(
+        chatroom=chatroom,
+        content__icontains=query.strip()
+    ).select_related('sender').order_by('-created_at')
+    
+    # Apply pagination
+    paginator = SearchPagination()
+    paginated_messages = paginator.paginate_queryset(messages, request)
+    
+    # Serialize the messages
+    serializer = MessageSerializer(paginated_messages, many=True)
+    
+    return paginator.get_paginated_response(serializer.data)
