@@ -264,6 +264,33 @@ def chatroom_details(request, room_id):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def leave_chatroom(request, chatroom_id):
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if chatroom.created_by == request.user:
+        return Response({
+            'error': 'The owner cannot leave the room. Please delete the room instead.'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        membership = ChatroomMember.objects.get(user=request.user, chatroom=chatroom)
+        membership.delete()
+        return Response({
+            'message': 'Successfully left the chatroom'
+        }, status=status.HTTP_200_OK)
+    except ChatroomMember.DoesNotExist:
+        return Response({
+            'error': 'You are not a member of this chatroom'
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+
 @api_view(['PUT', 'PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def update_profile(request):
