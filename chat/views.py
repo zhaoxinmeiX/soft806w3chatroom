@@ -251,6 +251,19 @@ def profile(request):
         }, status=status.HTTP_404_NOT_FOUND)
 
 
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def chatroom_details(request, room_id):
+    try:
+        chatroom = Chatroom.objects.get(id=room_id)
+        serializer = ChatroomSerializer(chatroom)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+
+
 @api_view(['PUT', 'PATCH'])
 @permission_classes([permissions.IsAuthenticated])
 def update_profile(request):
