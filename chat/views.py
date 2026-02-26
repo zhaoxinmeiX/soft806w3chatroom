@@ -418,3 +418,28 @@ def search_messages(request, chatroom_id):
     serializer = MessageSerializer(paginated_messages, many=True)
     
     return paginator.get_paginated_response(serializer.data)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def delete_chatroom(request, chatroom_id):
+    # Check if chatroom exists
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if user is the owner of the chatroom
+    if request.user.id != chatroom.created_by.id:
+        return Response({
+            'error': 'Only the owner can delete this chatroom'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    # Delete the chatroom (Django CASCADE will automatically delete related members and messages)
+    chatroom.delete()
+    
+    return Response({
+        'message': 'Chatroom deleted successfully'
+    }, status=status.HTTP_200_OK)
