@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.authtoken.models import Token
 from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from .serializers import UserRegistrationSerializer, ChatroomSerializer, MessageSerializer, UserProfileSerializer
 from .models import Chatroom, ChatroomMember, Message, UserProfile
 
@@ -338,6 +339,45 @@ def update_profile(request):
         return Response({
             'error': str(e)
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['DELETE'])
+@permission_classes([permissions.IsAuthenticated])
+def remove_member(request, chatroom_id, user_id):
+    try:
+        chatroom = Chatroom.objects.get(id=chatroom_id)
+    except Chatroom.DoesNotExist:
+        return Response({
+            'error': 'Chatroom not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    if request.user.id != chatroom.created_by.id:
+        return Response({
+            'error': 'Only the owner can remove members'
+        }, status=status.HTTP_403_FORBIDDEN)
+    
+    if int(user_id) == chatroom.created_by.id:
+        return Response({
+            'error': 'The owner cannot remove themselves'
+        }, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        target_user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({
+            'error': 'User not found'
+        }, status=status.HTTP_404_NOT_FOUND)
+    
+    try:
+        membership = ChatroomMember.objects.get(user=target_user, chatroom=chatroom)
+        membership.delete()
+        return Response({
+            'message': 'Member removed successfully'
+        }, status=status.HTTP_200_OK)
+    except ChatroomMember.DoesNotExist:
+        return Response({
+            'error': 'User is not a member of this chatroom'
+        }, status=status.HTTP_404_NOT_FOUND)
 
 
 @api_view(['GET'])
