@@ -2,6 +2,8 @@ version: 2.1
 
 jobs:
   build-and-test:
+  docker:
+      - image: cimg/python:3.11
 
     steps:
       - checkout
