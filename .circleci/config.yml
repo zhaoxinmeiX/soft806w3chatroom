@@ -1,0 +1,41 @@
+version: 2.1
+
+jobs:
+  build-and-test:
+    docker:
+      - image: cimg/python:3.11
+
+    working_directory: ~/project
+
+    steps:
+      - checkout
+
+      - run:
+          name: Upgrade pip
+          command: |
+            python -m pip install --upgrade pip
+
+      - run:
+          name: Install dependencies
+          command: |
+            pip install -r requirements.txt
+
+      - run:
+          name: Run migrations
+          command: |
+            python manage.py migrate
+
+      - run:
+          name: Run tests
+          command: |
+            python manage.py test
+
+      - run:
+          name: Build Docker image
+          command: |
+            docker build -t django-app .
+
+workflows:
+  django-ci:
+    jobs:
+      - build-and-test
