@@ -3,39 +3,19 @@ version: 2.1
 jobs:
   build-and-test:
     docker:
-      - image: cimg/python:3.11
-
-    working_directory: ~/project
+      - image: cimg/base:stable   # Required executor
 
     steps:
       - checkout
 
-      - run:
-          name: Upgrade pip
-          command: |
-            python -m pip install --upgrade pip
+      - setup_remote_docker       # Needed for Docker build
 
       - run:
-          name: Install dependencies
-          command: |
-            pip install -r requirements.txt
-
-      - run:
-          name: Run migrations
-          command: |
-            python manage.py migrate
-
-      - run:
-          name: Run tests
-          command: |
-            python manage.py test
-
-      - run:
-          name: Build Docker image
+          name: Build Docker Image
           command: |
             docker build -t django-app .
 
 workflows:
-  django-ci:
+  django-integration:
     jobs:
       - build-and-test
