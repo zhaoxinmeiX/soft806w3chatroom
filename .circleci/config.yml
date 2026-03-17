@@ -5,6 +5,8 @@ jobs:
     docker:
       - image: cimg/python:3.11
 
+    working_directory: ~/project
+
     steps:
       - checkout
       - run:
